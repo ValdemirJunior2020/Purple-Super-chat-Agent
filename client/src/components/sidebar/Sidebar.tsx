@@ -85,7 +85,7 @@ export function Sidebar({
 
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 rounded-full glass glow border border-purple-300/25 grid place-items-center">
-            <span className="text-2xl font-bold text-purple-200">G</span>
+            <span className="text-2xl font-bold text-purple-200">M</span>
           </div>
 
           <div className="flex flex-col gap-2">
