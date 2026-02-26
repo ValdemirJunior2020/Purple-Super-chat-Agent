@@ -1,6 +1,6 @@
 ﻿
 // Chat view
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState  } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { loadMessages, type ChatMessage } from "../../lib/chatStore";

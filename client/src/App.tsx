@@ -1,6 +1,6 @@
 ﻿
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState  } from "react";
 import { initFirebase, signInAnon } from "./lib/firebase";
 import { GlassShell } from "./components/layout/GlassShell";
 import { Sidebar } from "./components/sidebar/Sidebar";
