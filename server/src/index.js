@@ -1,5 +1,6 @@
 ﻿// ✅ FILE: server/src/index.js
-// Make sure dotenv is loaded BEFORE anything else (keep this at the top)
+// Fixes: Netlify -> Render "Failed to fetch" caused by CORS preflight (OPTIONS) not being handled correctly.
+// This adds a proper global OPTIONS handler + strict allowlist CORS (or allow-all if ALLOWED_ORIGINS is empty).
 
 import "dotenv/config";
 import express from "express";
@@ -8,30 +9,41 @@ import { v4 as uuidv4 } from "uuid";
 import { refreshMatrix, getMatrixStatus, searchMatrix } from "./matrixStore.js";
 import { streamAnswerFromClaude } from "./llm.js";
 
-/* ...rest of your file unchanged... */
-
 const app = express();
+app.disable("x-powered-by");
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "2mb" }));
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+const allowlist = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true);
-      if (allowedOrigins.length === 0) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("CORS blocked"), false);
-    },
-    credentials: true
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    // allow same-origin / server-to-server / no origin
+    if (!origin) return cb(null, true);
 
+    // allow all if no allowlist configured
+    if (allowlist.length === 0) return cb(null, true);
+
+    // allow only listed origins
+    return cb(null, allowlist.includes(origin));
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 204,
+  maxAge: 86400
+};
+
+// ✅ CORS middleware + explicit OPTIONS handler (this is the key fix)
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.get("/", (req, res) => res.status(200).send("Super QA Analyst API is running."));
 app.get("/health", (req, res) => res.json({ ok: true }));
+app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.get("/api/matrix/status", (req, res) => {
   res.json(getMatrixStatus());
@@ -53,6 +65,10 @@ app.post("/api/chat/stream", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // helps with proxies
+
+  // flush headers early
+  if (typeof res.flushHeaders === "function") res.flushHeaders();
 
   const send = (event, data) => {
     res.write(`event: ${event}\n`);
