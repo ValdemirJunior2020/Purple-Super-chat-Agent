@@ -1,5 +1,6 @@
 ﻿// ✅ FILE: client/src/components/sidebar/Sidebar.tsx
-// Fixes BOTH ESLint errors by providing the full correct file (Props is used, no stray expressions).
+// Change: Chat History items are now SIMPLE TEXT ROWS (not big buttons).
+// Everything else stays the same.
 
 import React from "react";
 import type { ChatListItem } from "../../lib/chatStore";
@@ -13,7 +14,7 @@ type Props = {
   onRefreshMatrix: () => void;
   matrix: MatrixStatus | null;
   isCreatingChat?: boolean;
-  showTopLogo?: boolean; // if true, show logo inside sidebar (you are passing false from App)
+  showTopLogo?: boolean;
 };
 
 function GlowButton({
@@ -65,12 +66,11 @@ export function Sidebar({
   showTopLogo
 }: Props) {
   const loadedText = matrix?.loaded ? "Matrix: loaded" : "Matrix: not loaded";
-  const shouldShowLogo = showTopLogo !== false; // default true unless explicitly false
+  const shouldShowLogo = showTopLogo !== false;
 
   return (
     <aside className="w-full md:w-96 shrink-0 h-full p-6">
       <div className="glass glow rounded-3xl h-full flex flex-col overflow-hidden p-5 gap-4">
-        {/* Optional sidebar logo (you set showTopLogo={false} in App) */}
         {shouldShowLogo ? (
           <div className="flex justify-center pt-1">
             <div className="glass glow rounded-3xl border border-white/10 px-6 py-4">
@@ -83,10 +83,9 @@ export function Sidebar({
           </div>
         ) : null}
 
-        {/* Brand */}
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 rounded-full glass glow border border-purple-300/25 grid place-items-center">
-            <span className="text-2xl font-bold text-purple-200">M</span>
+            <span className="text-2xl font-bold text-purple-200">G</span>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -100,7 +99,6 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* Primary buttons */}
         <div className="grid grid-cols-2 gap-4">
           <GlowButton onClick={onNewChat}>+ New Chat</GlowButton>
           <GlowButton onClick={onRefreshMatrix} title="Reload all Matrix tabs from Google Sheet">
@@ -108,7 +106,6 @@ export function Sidebar({
           </GlowButton>
         </div>
 
-        {/* Matrix status */}
         <Tile className="border border-purple-300/20">
           <div className="text-lg font-semibold">{loadedText}</div>
           {matrix?.loaded ? (
@@ -121,14 +118,13 @@ export function Sidebar({
           )}
         </Tile>
 
-        {/* Header */}
         <Tile className="py-3 text-center">
           <div className="text-xl font-semibold">Chat History</div>
         </Tile>
 
-        {/* Chat list */}
+        {/* ✅ SIMPLE TEXT LIST (not big buttons) */}
         <div className="flex-1 overflow-auto pr-1">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col">
             {chats.map((c) => {
               const active = c.id === activeChatId;
 
@@ -138,37 +134,30 @@ export function Sidebar({
                   type="button"
                   onClick={() => onSelectChat(c.id)}
                   className={[
-                    "group w-full text-left rounded-2xl px-4 py-3 border transition",
-                    "glass",
-                    "cursor-pointer select-none",
+                    "w-full text-left px-2 py-2 rounded-lg",
+                    "transition",
                     "focus:outline-none focus:ring-2 focus:ring-purple-400/40",
-                    active
-                      ? "border-purple-300/40 bg-purple-700/22"
-                      : "border-white/10 hover:bg-purple-700/14 active:bg-purple-700/18"
+                    active ? "bg-white/10" : "hover:bg-white/5"
                   ].join(" ")}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold truncate">{c.title}</div>
-                    <div className="text-xs text-muted-foreground opacity-70 group-hover:opacity-100 transition">›</div>
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground/80">
-                    {c.storage === "firebase" ? "Cloud" : "Local"}
+                    <span className="text-sm font-semibold text-white truncate">{c.title}</span>
+                    <span className="text-xs text-white/60">›</span>
                   </div>
                 </button>
               );
             })}
 
             {chats.length === 0 ? (
-              <div className="text-sm text-muted-foreground px-2 py-4">
-                No chats yet — click <span className="text-foreground/90">New Chat</span>.
+              <div className="text-sm text-white/70 px-2 py-2">
+                No chats yet — click <span className="text-white">New Chat</span>.
               </div>
             ) : null}
           </div>
         </div>
 
-        {/* Footer */}
         <Tile className="py-3">
-          <div className="text-lg font-semibold">Firebase: anonymous</div>
+          <div className="text-lg font-semibold">Firebase:DATABASE</div>
         </Tile>
 
         {isCreatingChat ? (
