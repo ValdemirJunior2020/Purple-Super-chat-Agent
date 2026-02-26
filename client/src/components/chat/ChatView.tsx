@@ -1,6 +1,5 @@
-﻿
-// Chat view
-import { useEffect, useRef, useState  } from "react";
+﻿// ✅ FILE: client/src/components/chat/ChatView.tsx
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { loadMessages, type ChatMessage } from "../../lib/chatStore";
@@ -21,6 +20,9 @@ const SUGGESTIONS = [
   "Incorrect guest name or modifying name",
   "Guest requests refund — what is the compliant process?"
 ];
+
+// ✅ IMPORTANT: works on Netlify too (base path safe)
+const THINKING_GIF = `${import.meta.env.BASE_URL}thinking.gif`;
 
 export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -91,6 +93,8 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
     });
   }
 
+  const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant")?.id || "";
+
   return (
     <main className="flex-1 h-full p-6">
       <div className="glass glow rounded-3xl h-full flex flex-col overflow-hidden relative">
@@ -113,7 +117,6 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
             <div className="h-full grid place-items-center">
               <div className="text-center max-w-2xl">
                 <div className="text-3xl font-semibold text-foreground/90">How can I help you today?</div>
-
                 <div className="mt-6 grid gap-3">
                   {SUGGESTIONS.map((s) => (
                     <button
@@ -130,24 +133,48 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {messages.map((m) => (
-                <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                  <div
-                    className={[
-                      "max-w-215 rounded-2xl border px-5 py-4",
-                      m.role === "user" ? "bg-purple-600/25 border-purple-400/30" : "bg-white/5 border-white/10"
-                    ].join(" ")}
-                  >
-                    <div className="text-xs text-muted-foreground mb-2">{m.role === "user" ? "You" : "QA Master"}</div>
+              {messages.map((m) => {
+                const isUser = m.role === "user";
+                const isThinkingBubble = streaming && m.role === "assistant" && m.id === lastAssistantId && !m.content;
 
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {m.content || (m.role === "assistant" && streaming ? "…" : "")}
-                      </ReactMarkdown>
+                return (
+                  <div key={m.id} className={isUser ? "flex justify-end" : "flex justify-start"}>
+                    <div
+                      className={[
+                        "max-w-215 rounded-2xl border px-5 py-4",
+                        isUser ? "bg-purple-600/25 border-purple-400/30" : "bg-white/5 border-white/10"
+                      ].join(" ")}
+                    >
+                      {/* Hide the top label when the thinking GIF is active */}
+                      {!isThinkingBubble && (
+                        <div className="text-xs text-muted-foreground mb-2">
+                          {isUser ? "You" : "QA Master"}
+                        </div>
+                      )}
+
+                      {isThinkingBubble ? (
+                        <div className="flex items-center justify-center py-2 px-4">
+                          <img
+                            src={THINKING_GIF}
+                            alt=""
+                            aria-hidden="true"
+                            // Force width, let height auto-adjust to prevent squishing
+                            className="w-48 h-auto object-contain drop-shadow-lg"
+                            onError={(e) => {
+                              // prevents showing broken image icon if it fails
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="prose prose-invert prose-sm max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content || ""}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={bottomRef} />
             </div>
           )}
