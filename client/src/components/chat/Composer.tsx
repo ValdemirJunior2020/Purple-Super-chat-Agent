@@ -31,7 +31,7 @@ export function Composer({ value, onChange, onSend, disabled }: Props) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Type a message…"
+        placeholder="Type a message…or click New Chat on the sidebar to start a new conversation"
         className="w-full resize-none bg-transparent outline-none text-sm leading-6 max-h-44 min-h-11.5 placeholder:text-muted-foreground/70"
         rows={1}
         disabled={disabled}
