@@ -1,0 +1,12 @@
+# ✅ FILE: client/netlify.toml
+# Put this in the CLIENT folder (same level as client/package.json)
+
+[build]
+  base = "client"
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
