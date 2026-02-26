@@ -1,6 +1,6 @@
 ﻿// ✅ FILE: server/src/index.js
-// Fixes: Netlify -> Render "Failed to fetch" caused by CORS preflight (OPTIONS) not being handled correctly.
-// This adds a proper global OPTIONS handler + strict allowlist CORS (or allow-all if ALLOWED_ORIGINS is empty).
+// FIX: CORS blocked because ALLOWED_ORIGINS contains a trailing "/" and your code was doing exact match.
+// This version NORMALIZES origins (lowercase + removes trailing "/") and properly handles OPTIONS + SSE.
 
 import "dotenv/config";
 import express from "express";
@@ -11,24 +11,38 @@ import { streamAnswerFromClaude } from "./llm.js";
 
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 
 app.use(express.json({ limit: "2mb" }));
 
+// ✅ Normalize helper (Origin header NEVER includes a trailing slash)
+function normalizeOrigin(v) {
+  return String(v || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .toLowerCase();
+}
+
 const allowlist = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
-  .map((s) => s.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
 const corsOptions = {
   origin(origin, cb) {
-    // allow same-origin / server-to-server / no origin
+    // same-origin/server-to-server/no Origin header
     if (!origin) return cb(null, true);
 
-    // allow all if no allowlist configured
+    const o = normalizeOrigin(origin);
+
+    // allow all if allowlist is empty
     if (allowlist.length === 0) return cb(null, true);
 
-    // allow only listed origins
-    return cb(null, allowlist.includes(origin));
+    // allow if exact match after normalization
+    if (allowlist.includes(o)) return cb(null, true);
+
+    // block
+    return cb(new Error("CORS blocked"), false);
   },
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -37,7 +51,6 @@ const corsOptions = {
   maxAge: 86400
 };
 
-// ✅ CORS middleware + explicit OPTIONS handler (this is the key fix)
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
@@ -62,12 +75,12 @@ app.post("/api/chat/stream", async (req, res) => {
   const { message, chatId } = req.body || {};
   const safeChatId = chatId || uuidv4();
 
+  // SSE headers
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no"); // helps with proxies
+  res.setHeader("X-Accel-Buffering", "no");
 
-  // flush headers early
   if (typeof res.flushHeaders === "function") res.flushHeaders();
 
   const send = (event, data) => {
@@ -81,6 +94,7 @@ app.post("/api/chat/stream", async (req, res) => {
       return res.end();
     }
 
+    // Ensure matrix loaded
     const status = getMatrixStatus();
     if (!status.loaded) {
       try {
@@ -93,7 +107,8 @@ app.post("/api/chat/stream", async (req, res) => {
     const matches = searchMatrix(message);
 
     if (!matches.found) {
-      const exact = "This scenario is not covered in the 2026 Service Matrix. Please escalate to supervisor.";
+      const exact =
+        "This scenario is not covered in the 2026 Service Matrix. Please escalate to supervisor.";
       send("meta", { chatId: safeChatId });
       send("token", { t: exact });
       send("done", { ok: true });
