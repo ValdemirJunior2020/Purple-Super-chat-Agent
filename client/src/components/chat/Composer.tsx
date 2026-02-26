@@ -1,5 +1,4 @@
-﻿// ✅ FILE: client/src/components/chat/Composer.tsx
-// Update: nicer Gemini-like input bar + ENTER send / Shift+ENTER newline
+﻿
 
 import React, { useEffect, useRef } from "react";
 
@@ -33,7 +32,7 @@ export function Composer({ value, onChange, onSend, disabled }: Props) {
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Type a message…"
-        className="w-full resize-none bg-transparent outline-none text-sm leading-6 max-h-44 min-h-[46px] placeholder:text-muted-foreground/70"
+        className="w-full resize-none bg-transparent outline-none text-sm leading-6 max-h-44 min-h-11.5 placeholder:text-muted-foreground/70"
         rows={1}
         disabled={disabled}
       />

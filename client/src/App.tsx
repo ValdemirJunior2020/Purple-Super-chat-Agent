@@ -1,11 +1,11 @@
-﻿// ✅ FILE: client/src/App.tsx
-// Fix: top-center logo is now STICKY (always visible) + no overlap (adds top padding to app content)
+﻿
 
 import React, { useEffect, useMemo, useState } from "react";
 import { initFirebase, signInAnon } from "./lib/firebase";
 import { GlassShell } from "./components/layout/GlassShell";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { ChatView } from "./components/chat/ChatView";
+
 import {
   createNewChat,
   listChats,

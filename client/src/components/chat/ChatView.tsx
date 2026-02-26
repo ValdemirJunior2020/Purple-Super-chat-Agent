@@ -1,6 +1,4 @@
-﻿// ✅ FILE: client/src/components/chat/ChatView.tsx
-// Fix: ensures NAMED export `ChatView` exists (so `import { ChatView } ...` works)
-// Also uses bg-linear-to-t (canonical) + nowMs() (no Date.now)
+﻿
 
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
