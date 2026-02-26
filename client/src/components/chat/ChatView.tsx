@@ -1,5 +1,6 @@
 ﻿// ✅ FILE: client/src/components/chat/ChatView.tsx
-// Update: Gemini-style "Ask anything" area + suggestion chips + always-visible input at the bottom.
+// Fix: ensures NAMED export `ChatView` exists (so `import { ChatView } ...` works)
+// Also uses bg-linear-to-t (canonical) + nowMs() (no Date.now)
 
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -7,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { loadMessages, type ChatMessage } from "../../lib/chatStore";
 import { streamChat } from "../../lib/sseClient";
 import { Composer } from "./Composer";
+import { nowMs } from "../../lib/time";
 
 type Props = {
   chatId: string;
@@ -31,6 +33,7 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
 
   useEffect(() => {
     if (!chatId) return;
+
     (async () => {
       const msgs = await loadMessages(chatId, 250);
       setMessages(msgs);
@@ -46,7 +49,13 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
     const text = (textOverride ?? draft).trim();
     if (!text || streaming || !chatId) return;
 
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: "user", content: text, createdAt: Date.now() };
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      createdAt: nowMs()
+    };
+
     setMessages((m) => [...m, userMsg]);
     setDraft("");
     await onPersistMessage(chatId, userMsg);
@@ -54,14 +63,22 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
     const assistantId = crypto.randomUUID();
     assistantTextRef.current = "";
 
-    const assistantMsg: ChatMessage = { id: assistantId, role: "assistant", content: "", createdAt: Date.now() };
+    const assistantMsg: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      createdAt: nowMs()
+    };
+
     setMessages((m) => [...m, assistantMsg]);
     setStreaming(true);
 
     await streamChat(chatId, text, {
       onToken: (t) => {
         assistantTextRef.current += t;
-        setMessages((m) => m.map((x) => (x.id === assistantId ? { ...x, content: x.content + t } : x)));
+        setMessages((m) =>
+          m.map((x) => (x.id === assistantId ? { ...x, content: x.content + t } : x))
+        );
       },
       onDone: async () => {
         setStreaming(false);
@@ -79,15 +96,13 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
   return (
     <main className="flex-1 h-full p-6">
       <div className="glass glow rounded-3xl h-full flex flex-col overflow-hidden relative">
-        {/* Header */}
         <div className="px-8 py-5 border-b border-white/10">
           <div className="flex items-center justify-between">
-            <div className="text-xl font-semibold tracking-tight">Gemini</div>
+            <div className="text-xl font-semibold tracking-tight">Matrix-AI</div>
             <div className="text-xs text-muted-foreground truncate max-w-[60%]">{title}</div>
           </div>
         </div>
 
-        {/* Optional Firebase banner */}
         {firebaseError ? (
           <div className="px-8 py-4 border-b border-white/10 bg-destructive/10">
             <div className="text-sm font-semibold text-destructive">Firebase issue</div>
@@ -95,7 +110,6 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
           </div>
         ) : null}
 
-        {/* Scroll area */}
         <div className="flex-1 overflow-auto px-8 py-8 pb-28">
           {messages.length === 0 ? (
             <div className="h-full grid place-items-center">
@@ -127,6 +141,7 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
                     ].join(" ")}
                   >
                     <div className="text-xs text-muted-foreground mb-2">{m.role === "user" ? "You" : "QA Master"}</div>
+
                     <div className="prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {m.content || (m.role === "assistant" && streaming ? "…" : "")}
@@ -140,8 +155,7 @@ export function ChatView({ chatId, title, onPersistMessage, firebaseError }: Pro
           )}
         </div>
 
-        {/* Fixed composer at bottom (Gemini style) */}
-        <div className="absolute left-0 right-0 bottom-0 px-8 pb-6 pt-3 bg-gradient-to-t from-black/40 to-transparent">
+        <div className="absolute left-0 right-0 bottom-0 px-8 pb-6 pt-3 bg-linear-to-t from-black/40 to-transparent">
           <Composer value={draft} onChange={setDraft} onSend={() => send()} disabled={streaming} />
         </div>
       </div>
