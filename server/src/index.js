@@ -1,6 +1,8 @@
 ﻿// ✅ FILE: server/src/index.js
-// FIX: CORS blocked because ALLOWED_ORIGINS contains a trailing "/" and your code was doing exact match.
-// This version NORMALIZES origins (lowercase + removes trailing "/") and properly handles OPTIONS + SSE.
+// FIXES:
+// 1) Render crash: app.options("*", ...) breaks on your Express/router version -> use regex /.*/ instead
+// 2) CORS blocked: normalize origins (strip trailing "/") + allowlist match
+// 3) SSE headers + stable API routes
 
 import "dotenv/config";
 import express from "express";
@@ -15,7 +17,7 @@ app.set("trust proxy", 1);
 
 app.use(express.json({ limit: "2mb" }));
 
-// ✅ Normalize helper (Origin header NEVER includes a trailing slash)
+// ✅ Normalize helper (Origin header never includes trailing slash)
 function normalizeOrigin(v) {
   return String(v || "")
     .trim()
@@ -30,18 +32,17 @@ const allowlist = (process.env.ALLOWED_ORIGINS || "")
 
 const corsOptions = {
   origin(origin, cb) {
-    // same-origin/server-to-server/no Origin header
+    // server-to-server / no Origin header
     if (!origin) return cb(null, true);
 
     const o = normalizeOrigin(origin);
 
-    // allow all if allowlist is empty
+    // allow all if ALLOWED_ORIGINS not set
     if (allowlist.length === 0) return cb(null, true);
 
-    // allow if exact match after normalization
     if (allowlist.includes(o)) return cb(null, true);
 
-    // block
+    // block without crashing server
     return cb(new Error("CORS blocked"), false);
   },
   methods: ["GET", "POST", "OPTIONS"],
@@ -51,8 +52,11 @@ const corsOptions = {
   maxAge: 86400
 };
 
+// ✅ Apply CORS globally
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
+// ✅ IMPORTANT: Express/router in your environment crashes on "*" — use regex
+app.options(/.*/, cors(corsOptions));
 
 app.get("/", (req, res) => res.status(200).send("Super QA Analyst API is running."));
 app.get("/health", (req, res) => res.json({ ok: true }));
@@ -95,8 +99,7 @@ app.post("/api/chat/stream", async (req, res) => {
     }
 
     // Ensure matrix loaded
-    const status = getMatrixStatus();
-    if (!status.loaded) {
+    if (!getMatrixStatus().loaded) {
       try {
         await refreshMatrix();
       } catch {
@@ -134,6 +137,8 @@ app.post("/api/chat/stream", async (req, res) => {
 const port = Number(process.env.PORT || 5050);
 app.listen(port, async () => {
   console.log(`Server listening on :${port}`);
+  console.log("ALLOWED_ORIGINS allowlist:", allowlist);
+
   try {
     await refreshMatrix();
     console.log("Matrix loaded.");
