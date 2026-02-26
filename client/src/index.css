@@ -1,0 +1,70 @@
+﻿@import "tailwindcss";
+
+/* ✅ NO @apply in Tailwind v4 here (it caused your "unknown utility" errors) */
+
+:root {
+  --background: 240 20% 4%;
+  --foreground: 0 0% 95%;
+
+  --card: 240 20% 8%;
+  --card-foreground: 0 0% 95%;
+
+  --popover: 240 20% 8%;
+  --popover-foreground: 0 0% 95%;
+
+  --primary: 263 70% 66%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 15% 15%;
+  --secondary-foreground: 0 0% 90%;
+
+  --muted: 240 15% 15%;
+  --muted-foreground: 220 10% 55%;
+
+  --accent: 263 70% 66%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 240 15% 16%;
+  --input: 240 15% 16%;
+  --ring: 263 70% 66%;
+
+  --radius: 16px;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  margin: 0;
+}
+
+/* Gemini background */
+.gemini-bg {
+  background:
+    radial-gradient(900px 500px at 20% 10%, rgba(124,58,237,0.22), transparent 60%),
+    radial-gradient(900px 500px at 80% 20%, rgba(168,85,247,0.18), transparent 55%),
+    radial-gradient(700px 420px at 55% 90%, rgba(99,102,241,0.12), transparent 60%),
+    linear-gradient(180deg, rgba(10,10,18,1), rgba(6,6,12,1));
+}
+
+/* Glass helper class (used everywhere) */
+.glass {
+  background: rgba(46, 16, 101, 0.30); /* deep purple glass */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* Glow helper class */
+.glow {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 0 60px rgba(124,58,237,0.18),
+    0 0 140px rgba(168,85,247,0.12);
+}
